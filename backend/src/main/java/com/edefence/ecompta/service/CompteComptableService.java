@@ -26,13 +26,19 @@ public class CompteComptableService {
 
     @Transactional(readOnly = true)
     public List<CompteDto.Response> findAll(UUID entrepriseId) {
-        return repository.findByEntrepriseIdAndActifTrueOrderByNumeroAsc(entrepriseId)
+        return repository.findByEntrepriseIdOrderByNumeroAsc(entrepriseId)
                 .stream().map(this::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
     public List<CompteDto.Response> findByClasse(UUID entrepriseId, int classe) {
         return repository.findByEntrepriseIdAndClasseOrderByNumeroAsc(entrepriseId, classe)
+                .stream().map(this::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CompteDto.Response> search(UUID entrepriseId, String q) {
+        return repository.search(entrepriseId, q == null || q.isBlank() ? null : q.trim())
                 .stream().map(this::toResponse).toList();
     }
 
@@ -53,17 +59,38 @@ public class CompteComptableService {
     }
 
     @Transactional
+    public CompteDto.Response update(UUID id, UUID entrepriseId, CompteDto.UpdateRequest dto) {
+        CompteComptable compte = findCompteOrThrow(id, entrepriseId);
+        if (dto.numero() != null && !dto.numero().isBlank()) {
+            if (repository.existsByNumeroAndEntrepriseIdAndIdNot(dto.numero(), entrepriseId, id)) {
+                throw new IllegalStateException("Numéro de compte déjà existant : " + dto.numero());
+            }
+            compte.setNumero(dto.numero());
+        }
+        if (dto.intitule() != null && !dto.intitule().isBlank()) {
+            compte.setIntitule(dto.intitule());
+        }
+        return toResponse(repository.save(compte));
+    }
+
+    @Transactional
+    public CompteDto.Response toggleActif(UUID id, UUID entrepriseId) {
+        CompteComptable compte = findCompteOrThrow(id, entrepriseId);
+        compte.setActif(!compte.isActif());
+        return toResponse(repository.save(compte));
+    }
+
+    @Transactional
     public void seedSyscohadaForEntreprise(Entreprise entreprise) {
         try {
             ClassPathResource resource = new ClassPathResource("syscohada.json");
             List<Map<String, Object>> entries = objectMapper.readValue(
                     resource.getInputStream(), new TypeReference<>() {});
-
             List<CompteComptable> comptes = entries.stream()
-                    .map(entry -> CompteComptable.builder()
-                            .numero((String) entry.get("numero"))
-                            .intitule((String) entry.get("intitule"))
-                            .classe((Integer) entry.get("classe"))
+                    .map(e -> CompteComptable.builder()
+                            .numero((String) e.get("numero"))
+                            .intitule((String) e.get("intitule"))
+                            .classe((Integer) e.get("classe"))
                             .entreprise(entreprise)
                             .build())
                     .toList();
@@ -71,13 +98,6 @@ public class CompteComptableService {
         } catch (IOException e) {
             throw new IllegalStateException("Erreur lors du chargement du référentiel SYSCOHADA", e);
         }
-    }
-
-    @Transactional
-    public void toggleActif(UUID id, UUID entrepriseId) {
-        CompteComptable compte = findCompteOrThrow(id, entrepriseId);
-        compte.setActif(!compte.isActif());
-        repository.save(compte);
     }
 
     private CompteComptable findCompteOrThrow(UUID id, UUID entrepriseId) {

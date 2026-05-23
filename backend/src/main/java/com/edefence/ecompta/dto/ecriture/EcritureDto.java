@@ -30,14 +30,14 @@ public class EcritureDto {
             EcritureComptable.Journal journal,
             EcritureComptable.Statut statut,
             List<LigneDto.Response> lignes,
+            BigDecimal totalDebit,
+            BigDecimal totalCredit,
             OffsetDateTime createdAt
     ) {}
 
     public record Stats(
             long totalEcritures,
             long brouillons,
-            long validees,
-            BigDecimal totalDebit,
-            BigDecimal totalCredit
+            long validees
     ) {}
 }

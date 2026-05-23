@@ -1,6 +1,7 @@
 package com.edefence.ecompta.controller;
 
 import com.edefence.ecompta.domain.Entreprise;
+import com.edefence.ecompta.domain.EcritureComptable;
 import com.edefence.ecompta.domain.Utilisateur;
 import com.edefence.ecompta.dto.ecriture.EcritureDto;
 import com.edefence.ecompta.repository.EntrepriseRepository;
@@ -26,15 +27,22 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class EcritureController {
 
-    private final EcritureService service;
+    private final EcritureService      service;
     private final EntrepriseRepository entrepriseRepo;
 
     @GetMapping
     public Page<EcritureDto.Response> findAll(
+            @RequestParam(required = false) EcritureComptable.Journal journal,
+            @RequestParam(required = false) EcritureComptable.Statut statut,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @PageableDefault(size = 20) Pageable pageable) {
-        return service.findAll(TenantContext.get(), from, to, pageable);
+        return service.findAll(TenantContext.get(), journal, statut, from, to, pageable);
+    }
+
+    @GetMapping("/stats")
+    public EcritureDto.Stats stats() {
+        return service.stats(TenantContext.get());
     }
 
     @GetMapping("/{id}")
@@ -47,8 +55,7 @@ public class EcritureController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('COMPTABLE')")
     public EcritureDto.Response create(@Valid @RequestBody EcritureDto.Request dto,
                                        @AuthenticationPrincipal Utilisateur auteur) {
-        Entreprise entreprise = loadEntreprise();
-        return service.create(TenantContext.get(), dto, auteur, entreprise);
+        return service.create(TenantContext.get(), dto, auteur, loadEntreprise());
     }
 
     @PostMapping("/{id}/valider")

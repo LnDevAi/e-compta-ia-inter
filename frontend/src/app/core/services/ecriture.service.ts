@@ -1,17 +1,29 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Ecriture, EcritureRequest, PageResponse } from '../models/ecriture.model';
+import { Ecriture, EcritureRequest, EcritureStats, Journal, PageResponse, StatutEcriture } from '../models/ecriture.model';
 
 @Injectable({ providedIn: 'root' })
 export class EcritureService {
 
   constructor(private http: HttpClient) {}
 
-  findAll(page = 0, size = 20, from?: string, to?: string) {
-    let params = new HttpParams().set('page', page).set('size', size);
-    if (from) params = params.set('from', from);
-    if (to)   params = params.set('to', to);
+  findAll(opts: {
+    page?: number; size?: number;
+    journal?: Journal | ''; statut?: StatutEcriture | '';
+    from?: string; to?: string;
+  } = {}) {
+    let params = new HttpParams()
+      .set('page', opts.page ?? 0)
+      .set('size', opts.size ?? 20);
+    if (opts.journal) params = params.set('journal', opts.journal);
+    if (opts.statut)  params = params.set('statut',  opts.statut);
+    if (opts.from)    params = params.set('from', opts.from);
+    if (opts.to)      params = params.set('to',   opts.to);
     return this.http.get<PageResponse<Ecriture>>('/api/ecritures', { params });
+  }
+
+  stats() {
+    return this.http.get<EcritureStats>('/api/ecritures/stats');
   }
 
   findOne(id: string) {

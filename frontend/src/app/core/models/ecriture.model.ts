@@ -1,6 +1,10 @@
 export type Journal = 'AC' | 'BQ' | 'OD' | 'VT';
 export type StatutEcriture = 'BROUILLON' | 'VALIDEE' | 'CLOTUREE';
 
+export const JOURNAL_LABELS: Record<Journal, string> = {
+  AC: 'Achats', BQ: 'Banque', OD: 'Op. diverses', VT: 'Ventes'
+};
+
 export interface LigneEcriture {
   id?: string;
   compteId: string;
@@ -19,6 +23,8 @@ export interface Ecriture {
   journal: Journal;
   statut: StatutEcriture;
   lignes: LigneEcriture[];
+  totalDebit: number;
+  totalCredit: number;
   createdAt: string;
 }
 
@@ -28,6 +34,12 @@ export interface EcritureRequest {
   libelle: string;
   journal: Journal;
   lignes: LigneEcriture[];
+}
+
+export interface EcritureStats {
+  totalEcritures: number;
+  brouillons: number;
+  validees: number;
 }
 
 export interface PageResponse<T> {
