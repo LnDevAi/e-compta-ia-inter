@@ -16,6 +16,11 @@ public class CompteDto {
             @NotNull @Min(1) @Max(9) Integer classe
     ) {}
 
+    public record UpdateRequest(
+            String numero,
+            String intitule
+    ) {}
+
     public record Response(
             UUID id,
             String numero,

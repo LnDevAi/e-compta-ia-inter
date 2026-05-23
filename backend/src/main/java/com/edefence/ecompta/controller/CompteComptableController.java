@@ -15,6 +15,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/comptes")
@@ -22,16 +23,17 @@ import java.util.List;
 public class CompteComptableController {
 
     private final CompteComptableService service;
-    private final EntrepriseRepository entrepriseRepo;
+    private final EntrepriseRepository   entrepriseRepo;
 
     @GetMapping
-    public List<CompteDto.Response> findAll(@AuthenticationPrincipal Utilisateur user) {
-        return service.findAll(TenantContext.get());
+    public List<CompteDto.Response> findAll(@RequestParam(required = false) String q) {
+        return q != null && !q.isBlank()
+                ? service.search(TenantContext.get(), q)
+                : service.findAll(TenantContext.get());
     }
 
     @GetMapping("/classe/{classe}")
-    public List<CompteDto.Response> findByClasse(@PathVariable int classe,
-                                                  @AuthenticationPrincipal Utilisateur user) {
+    public List<CompteDto.Response> findByClasse(@PathVariable int classe) {
         return service.findByClasse(TenantContext.get(), classe);
     }
 
@@ -40,14 +42,20 @@ public class CompteComptableController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('COMPTABLE')")
     public CompteDto.Response create(@Valid @RequestBody CompteDto.Request dto,
                                      @AuthenticationPrincipal Utilisateur user) {
-        Entreprise entreprise = loadEntreprise();
-        return service.create(TenantContext.get(), dto, entreprise);
+        return service.create(TenantContext.get(), dto, loadEntreprise());
+    }
+
+    @PatchMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('COMPTABLE')")
+    public CompteDto.Response update(@PathVariable UUID id,
+                                     @RequestBody CompteDto.UpdateRequest dto) {
+        return service.update(id, TenantContext.get(), dto);
     }
 
     @PatchMapping("/{id}/toggle")
     @PreAuthorize("hasRole('ADMIN')")
-    public void toggle(@PathVariable java.util.UUID id) {
-        service.toggleActif(id, TenantContext.get());
+    public CompteDto.Response toggle(@PathVariable UUID id) {
+        return service.toggleActif(id, TenantContext.get());
     }
 
     private Entreprise loadEntreprise() {

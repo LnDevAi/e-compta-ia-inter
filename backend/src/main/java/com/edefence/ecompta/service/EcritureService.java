@@ -25,14 +25,18 @@ import java.util.UUID;
 public class EcritureService {
 
     private final EcritureComptableRepository ecritureRepo;
-    private final CompteComptableRepository compteRepo;
+    private final CompteComptableRepository   compteRepo;
 
     @Transactional(readOnly = true)
-    public Page<EcritureDto.Response> findAll(UUID entrepriseId, LocalDate from, LocalDate to, Pageable pageable) {
-        Page<EcritureComptable> page = (from != null && to != null)
-                ? ecritureRepo.findByEntrepriseIdAndDateEcritureBetweenOrderByDateEcritureDesc(entrepriseId, from, to, pageable)
-                : ecritureRepo.findByEntrepriseIdOrderByDateEcritureDesc(entrepriseId, pageable);
-        return page.map(this::toResponse);
+    public Page<EcritureDto.Response> findAll(
+            UUID entrepriseId,
+            EcritureComptable.Journal journal,
+            EcritureComptable.Statut statut,
+            LocalDate from,
+            LocalDate to,
+            Pageable pageable) {
+        return ecritureRepo.findWithFilters(entrepriseId, journal, statut, from, to, pageable)
+                .map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
@@ -40,13 +44,22 @@ public class EcritureService {
         return toResponse(findOrThrow(id, entrepriseId));
     }
 
+    @Transactional(readOnly = true)
+    public EcritureDto.Stats stats(UUID entrepriseId) {
+        return new EcritureDto.Stats(
+                ecritureRepo.countByEntrepriseId(entrepriseId),
+                ecritureRepo.countBrouillonsByEntrepriseId(entrepriseId),
+                ecritureRepo.countValideesByEntrepriseId(entrepriseId)
+        );
+    }
+
     @Transactional
     public EcritureDto.Response create(UUID entrepriseId, EcritureDto.Request dto,
-                                       Utilisateur auteur, com.edefence.ecompta.domain.Entreprise entreprise) {
+                                       Utilisateur auteur,
+                                       com.edefence.ecompta.domain.Entreprise entreprise) {
         if (ecritureRepo.existsByNumeroPieceAndEntrepriseId(dto.numeroPiece(), entrepriseId)) {
             throw new IllegalStateException("Numéro de pièce déjà utilisé : " + dto.numeroPiece());
         }
-
         validatePartieDuble(dto.lignes());
 
         EcritureComptable ecriture = EcritureComptable.builder()
@@ -59,11 +72,7 @@ public class EcritureService {
                 .build();
 
         for (LigneDto.Request l : dto.lignes()) {
-            CompteComptable compte = compteRepo.findById(l.compteId())
-                    .orElseThrow(() -> new EntityNotFoundException("Compte introuvable : " + l.compteId()));
-            if (!compte.getEntreprise().getId().equals(entrepriseId)) {
-                throw new IllegalArgumentException("Compte n'appartient pas à cette entreprise : " + l.compteId());
-            }
+            CompteComptable compte = resolveCompte(l.compteId(), entrepriseId);
             ecriture.getLignes().add(LigneEcriture.builder()
                     .ecriture(ecriture)
                     .compte(compte)
@@ -72,7 +81,6 @@ public class EcritureService {
                     .credit(l.credit())
                     .build());
         }
-
         return toResponse(ecritureRepo.save(ecriture));
     }
 
@@ -104,6 +112,15 @@ public class EcritureService {
         }
     }
 
+    private CompteComptable resolveCompte(UUID compteId, UUID entrepriseId) {
+        CompteComptable compte = compteRepo.findById(compteId)
+                .orElseThrow(() -> new EntityNotFoundException("Compte introuvable : " + compteId));
+        if (!compte.getEntreprise().getId().equals(entrepriseId)) {
+            throw new IllegalArgumentException("Compte n'appartient pas à cette entreprise : " + compteId);
+        }
+        return compte;
+    }
+
     private EcritureComptable findOrThrow(UUID id, UUID entrepriseId) {
         EcritureComptable e = ecritureRepo.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Écriture introuvable : " + id));
@@ -124,8 +141,13 @@ public class EcritureService {
                         l.getDebit(),
                         l.getCredit()))
                 .toList();
+
+        BigDecimal totalDebit  = lignes.stream().map(LigneDto.Response::debit).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalCredit = lignes.stream().map(LigneDto.Response::credit).reduce(BigDecimal.ZERO, BigDecimal::add);
+
         return new EcritureDto.Response(
                 e.getId(), e.getNumeroPiece(), e.getDateEcriture(),
-                e.getLibelle(), e.getJournal(), e.getStatut(), lignes, e.getCreatedAt());
+                e.getLibelle(), e.getJournal(), e.getStatut(),
+                lignes, totalDebit, totalCredit, e.getCreatedAt());
     }
 }
