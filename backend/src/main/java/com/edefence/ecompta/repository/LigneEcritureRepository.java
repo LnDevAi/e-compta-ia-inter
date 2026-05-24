@@ -2,6 +2,7 @@ package com.edefence.ecompta.repository;
 
 import com.edefence.ecompta.domain.LigneEcriture;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -65,4 +66,65 @@ public interface LigneEcritureRepository extends JpaRepository<LigneEcriture, UU
             """)
     List<Object[]> findLignesForCompte(@Param("id") UUID entrepriseId,
                                        @Param("compte") String compteNumero);
+
+    @Query("""
+            SELECT l.id, e.dateEcriture, e.numeroPiece, l.libelle, l.debit, l.credit,
+                   l.lettre, l.lettreDate
+            FROM LigneEcriture l
+            JOIN l.compte c
+            JOIN l.ecriture e
+            WHERE e.entreprise.id = :eid
+            AND e.statut = 'VALIDEE'
+            AND c.numero = :compte
+            ORDER BY l.lettre ASC NULLS LAST, e.dateEcriture ASC
+            """)
+    List<Object[]> findLignesLettrage(@Param("eid") UUID entrepriseId,
+                                      @Param("compte") String compteNumero);
+
+    @Query("""
+            SELECT COALESCE(MAX(l.lettre), '')
+            FROM LigneEcriture l
+            JOIN l.compte c
+            JOIN l.ecriture e
+            WHERE e.entreprise.id = :eid
+            AND c.numero = :compte
+            AND l.lettre IS NOT NULL
+            """)
+    String findMaxLettre(@Param("eid") UUID entrepriseId,
+                         @Param("compte") String compteNumero);
+
+    @Modifying
+    @Query("""
+            UPDATE LigneEcriture l SET l.lettre = :lettre, l.lettreDate = :date
+            WHERE l.id IN :ids
+            """)
+    void lettrer(@Param("ids") List<UUID> ids,
+                 @Param("lettre") String lettre,
+                 @Param("date") LocalDate date);
+
+    @Modifying
+    @Query("""
+            UPDATE LigneEcriture l SET l.lettre = NULL, l.lettreDate = NULL
+            WHERE l.lettre = :lettre
+            AND l.id IN (
+                SELECT l2.id FROM LigneEcriture l2
+                JOIN l2.compte c JOIN l2.ecriture e
+                WHERE e.entreprise.id = :eid AND c.numero = :compte
+            )
+            """)
+    void delettrer(@Param("lettre") String lettre,
+                   @Param("eid") UUID entrepriseId,
+                   @Param("compte") String compteNumero);
+
+    @Query("""
+            SELECT l FROM LigneEcriture l
+            JOIN l.compte c JOIN l.ecriture e
+            WHERE l.id IN :ids
+            AND e.entreprise.id = :eid
+            AND c.numero = :compte
+            AND e.statut = 'VALIDEE'
+            """)
+    List<LigneEcriture> findByIdsForLettrage(@Param("ids") List<UUID> ids,
+                                             @Param("eid") UUID entrepriseId,
+                                             @Param("compte") String compteNumero);
 }
