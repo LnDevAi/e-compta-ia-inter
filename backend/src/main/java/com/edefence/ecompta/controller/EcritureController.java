@@ -3,8 +3,10 @@ package com.edefence.ecompta.controller;
 import com.edefence.ecompta.domain.Entreprise;
 import com.edefence.ecompta.domain.EcritureComptable;
 import com.edefence.ecompta.domain.Utilisateur;
+import com.edefence.ecompta.dto.ecriture.CsvImportDto;
 import com.edefence.ecompta.dto.ecriture.EcritureDto;
 import com.edefence.ecompta.repository.EntrepriseRepository;
+import com.edefence.ecompta.service.CsvImportService;
 import com.edefence.ecompta.service.EcritureService;
 import com.edefence.ecompta.tenant.TenantContext;
 import jakarta.persistence.EntityNotFoundException;
@@ -15,10 +17,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -28,6 +34,7 @@ import java.util.UUID;
 public class EcritureController {
 
     private final EcritureService      service;
+    private final CsvImportService     csvImportService;
     private final EntrepriseRepository entrepriseRepo;
 
     @GetMapping
@@ -69,6 +76,14 @@ public class EcritureController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('COMPTABLE')")
     public void supprimer(@PathVariable UUID id) {
         service.supprimer(id, TenantContext.get());
+    }
+
+    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.OK)
+    @PreAuthorize("hasRole('ADMIN') or hasRole('COMPTABLE')")
+    public CsvImportDto.Result importCsv(@RequestPart("file") MultipartFile file,
+                                          @AuthenticationPrincipal UserDetails user) throws IOException {
+        return csvImportService.importer(TenantContext.get(), user.getUsername(), file.getBytes());
     }
 
     private Entreprise loadEntreprise() {
