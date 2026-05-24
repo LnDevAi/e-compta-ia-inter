@@ -2,6 +2,12 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Ecriture, EcritureRequest, EcritureStats, Journal, PageResponse, StatutEcriture } from '../models/ecriture.model';
 
+export interface CsvImportResult {
+  created: number;
+  skipped: number;
+  errors: { ligne: number; numeroPiece: string; message: string }[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class EcritureService {
 
@@ -40,5 +46,11 @@ export class EcritureService {
 
   supprimer(id: string) {
     return this.http.delete<void>(`/api/ecritures/${id}`);
+  }
+
+  importCsv(file: File) {
+    const form = new FormData();
+    form.append('file', file);
+    return this.http.post<CsvImportResult>('/api/ecritures/import', form);
   }
 }

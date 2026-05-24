@@ -3,7 +3,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormArray, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { EcritureService } from '../../core/services/ecriture.service';
+import { EcritureService, CsvImportResult } from '../../core/services/ecriture.service';
 import { CompteService } from '../../core/services/compte.service';
 import { Ecriture, EcritureRequest, EcritureStats, Journal, JOURNAL_LABELS, StatutEcriture } from '../../core/models/ecriture.model';
 import { Compte } from '../../core/models/compte.model';
@@ -30,12 +30,94 @@ const JOURNALS: Journal[] = ['AC', 'BQ', 'OD', 'VT'];
             </p>
           }
         </div>
-        <button (click)="toggleForm()"
-                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm
-                       font-medium rounded-lg transition">
-          + Nouvelle écriture
-        </button>
+        <div class="flex gap-2">
+          <button (click)="toggleImport()"
+                  class="px-3 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center gap-1.5">
+            <span class="text-xs">↑</span> Importer CSV
+          </button>
+          <button (click)="toggleForm()"
+                  class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm
+                         font-medium rounded-lg transition">
+            + Nouvelle écriture
+          </button>
+        </div>
       </div>
+
+      <!-- Import CSV panel -->
+      @if (showImport()) {
+        <div class="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-gray-700">Importer des écritures depuis un fichier CSV</h3>
+            <button (click)="showImport.set(false)" class="text-gray-400 hover:text-gray-600 text-xs">Fermer</button>
+          </div>
+
+          <!-- Format guide -->
+          <div class="bg-gray-50 rounded-lg p-3 space-y-2">
+            <p class="text-xs font-semibold text-gray-600">Format attendu (séparateur : point-virgule)</p>
+            <pre class="text-xs font-mono text-gray-500 overflow-x-auto leading-relaxed">date_ecriture;numero_piece;libelle;journal;compte_numero;libelle_ligne;debit;credit
+2025-01-15;FAC-001;Achat fournitures;AC;6044;Fournitures HT;590000;0
+2025-01-15;FAC-001;Achat fournitures;AC;4454;TVA 18%;106200;0
+2025-01-15;FAC-001;Achat fournitures;AC;401;Fournisseur XYZ;0;696200</pre>
+            <div class="flex items-center gap-4 text-xs text-gray-500">
+              <span>Journaux : <span class="font-mono">AC · BQ · OD · VT</span></span>
+              <span>·</span>
+              <span>Dates : <span class="font-mono">YYYY-MM-DD</span></span>
+              <span>·</span>
+              <span>Max 500 lignes</span>
+              <button (click)="downloadTemplate()"
+                      class="ml-auto text-blue-600 hover:underline">
+                Télécharger le modèle
+              </button>
+            </div>
+          </div>
+
+          <!-- File picker -->
+          <div class="flex items-center gap-3">
+            <input #csvFileInput type="file" accept=".csv,text/csv" class="hidden"
+                   (change)="onCsvSelected($event)"/>
+            <button (click)="csvFileInput.click()"
+                    [disabled]="importing()"
+                    class="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50">
+              {{ selectedFile() ? selectedFile()!.name : 'Choisir un fichier CSV…' }}
+            </button>
+            @if (selectedFile()) {
+              <button (click)="runImport()"
+                      [disabled]="importing()"
+                      class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+                {{ importing() ? 'Import en cours…' : 'Lancer l\'import' }}
+              </button>
+              <button (click)="clearImport()" class="text-xs text-gray-400 hover:text-gray-600">Annuler</button>
+            }
+          </div>
+
+          <!-- Results -->
+          @if (importResult()) {
+            <div class="space-y-2">
+              <div class="flex items-center gap-4 text-sm">
+                <span class="text-green-700 font-semibold">{{ importResult()!.created }} écriture(s) créée(s) en brouillon</span>
+                @if (importResult()!.skipped > 0) {
+                  <span class="text-gray-500">· {{ importResult()!.skipped }} ignorée(s) (N° pièce déjà existant)</span>
+                }
+                @if (importResult()!.errors.length > 0) {
+                  <span class="text-red-600">· {{ importResult()!.errors.length }} erreur(s)</span>
+                }
+              </div>
+              @if (importResult()!.errors.length > 0) {
+                <div class="bg-red-50 border border-red-200 rounded-lg p-3 space-y-1 max-h-32 overflow-y-auto">
+                  @for (err of importResult()!.errors; track err.ligne) {
+                    <p class="text-xs text-red-700">
+                      Ligne {{ err.ligne }} · <span class="font-mono">{{ err.numeroPiece }}</span> — {{ err.message }}
+                    </p>
+                  }
+                </div>
+              }
+            </div>
+          }
+          @if (importError()) {
+            <p class="text-sm text-red-600">{{ importError() }}</p>
+          }
+        </div>
+      }
 
       <!-- New entry form -->
       @if (showForm()) {
@@ -384,6 +466,13 @@ export class EcrituresComponent implements OnInit {
   totalPages   = signal(1);
   totalElements = signal(0);
 
+  // Import CSV state
+  showImport   = signal(false);
+  selectedFile = signal<File | null>(null);
+  importing    = signal(false);
+  importResult = signal<CsvImportResult | null>(null);
+  importError  = signal<string | null>(null);
+
   // Filters
   filterJournal: Journal | '' = '';
   filterStatut:  StatutEcriture | '' = '';
@@ -523,5 +612,68 @@ export class EcrituresComponent implements OnInit {
     while (this.lignesArray.length) this.lignesArray.removeAt(0);
     this.addLigne(); this.addLigne();
     this.formError.set('');
+  }
+
+  // ─── Import CSV ───────────────────────────────────────────────────────────
+
+  toggleImport() {
+    this.showImport.update(v => !v);
+    if (!this.showImport()) this.clearImport();
+    else this.showForm.set(false);
+  }
+
+  onCsvSelected(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (file) {
+      this.selectedFile.set(file);
+      this.importResult.set(null);
+      this.importError.set(null);
+    }
+  }
+
+  runImport() {
+    const file = this.selectedFile();
+    if (!file) return;
+    this.importing.set(true);
+    this.importError.set(null);
+    this.importResult.set(null);
+    this.ecritureService.importCsv(file).subscribe({
+      next: result => {
+        this.importResult.set(result);
+        this.importing.set(false);
+        if (result.created > 0) {
+          this.loadEcritures();
+          this.ecritureService.stats().subscribe(s => this.stats.set(s));
+        }
+      },
+      error: (err: any) => {
+        this.importError.set(err?.error?.message ?? "Erreur lors de l'import.");
+        this.importing.set(false);
+      }
+    });
+  }
+
+  clearImport() {
+    this.selectedFile.set(null);
+    this.importResult.set(null);
+    this.importError.set(null);
+  }
+
+  downloadTemplate() {
+    const csv = [
+      'date_ecriture;numero_piece;libelle;journal;compte_numero;libelle_ligne;debit;credit',
+      '2025-01-15;FAC-2025-001;Achat fournitures bureau;AC;6044;Fournitures bureau HT;590000;0',
+      '2025-01-15;FAC-2025-001;Achat fournitures bureau;AC;4454;TVA déductible 18%;106200;0',
+      '2025-01-15;FAC-2025-001;Achat fournitures bureau;AC;401;Fournisseur Express;0;696200',
+      '2025-01-20;REG-2025-001;Règlement fournisseur;BQ;401;Fournisseur Express;696200;0',
+      '2025-01-20;REG-2025-001;Règlement fournisseur;BQ;521;Banque Principale;0;696200',
+    ].join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = 'modele-import-ecritures.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   }
 }
