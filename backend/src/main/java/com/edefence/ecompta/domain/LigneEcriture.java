@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
@@ -33,4 +34,9 @@ public class LigneEcriture {
     @Column(nullable = false, precision = 15, scale = 2)
     @Builder.Default
     private BigDecimal credit = BigDecimal.ZERO;
+
+    @Column(length = 5)
+    private String lettre;
+
+    private LocalDate lettreDate;
 }
