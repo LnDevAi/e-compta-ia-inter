@@ -73,6 +73,11 @@ export const routes: Routes = [
           import('./features/immobilisations/immobilisations.component').then(m => m.ImmobilisationsComponent)
       },
       {
+        path: 'budget',
+        loadComponent: () =>
+          import('./features/budget/budget.component').then(m => m.BudgetComponent)
+      },
+      {
         path: 'profile',
         loadComponent: () =>
           import('./features/profile/profile.component').then(m => m.ProfileComponent)
