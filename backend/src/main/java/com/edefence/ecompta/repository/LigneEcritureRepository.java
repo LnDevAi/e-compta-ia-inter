@@ -136,4 +136,19 @@ public interface LigneEcritureRepository extends JpaRepository<LigneEcriture, UU
             """)
     List<LigneEcriture> findByIdsAndEntreprise(@Param("ids") List<UUID> ids,
                                                @Param("eid") UUID entrepriseId);
+
+    @Query("""
+            SELECT c.numero, COALESCE(SUM(l.debit - l.credit), 0)
+            FROM LigneEcriture l
+            JOIN l.compte c
+            JOIN l.ecriture e
+            WHERE e.entreprise.id = :eid
+            AND e.statut = 'VALIDEE'
+            AND c.numero LIKE '411%'
+            AND l.lettre IS NULL
+            GROUP BY c.numero
+            HAVING COALESCE(SUM(l.debit - l.credit), 0) > 0
+            ORDER BY c.numero ASC
+            """)
+    List<Object[]> creancesImpayeesParCompte(@Param("eid") UUID entrepriseId);
 }
