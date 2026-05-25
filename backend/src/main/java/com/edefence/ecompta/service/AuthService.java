@@ -7,7 +7,9 @@ import com.edefence.ecompta.dto.auth.LoginDto;
 import com.edefence.ecompta.dto.auth.ProfileDto;
 import com.edefence.ecompta.dto.auth.RegisterDto;
 import com.edefence.ecompta.dto.auth.UpdateProfileDto;
+import com.edefence.ecompta.domain.ReferentielFiscalPays;
 import com.edefence.ecompta.repository.EntrepriseRepository;
+import com.edefence.ecompta.repository.ReferentielFiscalPaysRepository;
 import com.edefence.ecompta.repository.UtilisateurRepository;
 import com.edefence.ecompta.security.JwtService;
 import jakarta.persistence.EntityNotFoundException;
@@ -25,9 +27,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AuthService {
 
-    private final EntrepriseRepository entrepriseRepo;
-    private final UtilisateurRepository utilisateurRepo;
-    private final CompteComptableService compteService;
+    private final EntrepriseRepository              entrepriseRepo;
+    private final UtilisateurRepository             utilisateurRepo;
+    private final ReferentielFiscalPaysRepository   referentielRepo;
+    private final CompteComptableService            compteService;
     private final PasswordEncoder encoder;
     private final JwtService jwtService;
     private final AuthenticationManager authManager;
@@ -38,12 +41,21 @@ public class AuthService {
             throw new IllegalStateException("Email déjà utilisé");
         }
 
-        Entreprise entreprise = entrepriseRepo.save(
-                Entreprise.builder()
-                        .nom(dto.nomEntreprise())
-                        .pays(dto.pays())
-                        .build()
-        );
+        // Résolution du référentiel fiscal par code pays
+        ReferentielFiscalPays ref = referentielRepo.findByCode(dto.pays().toUpperCase()).orElse(null);
+
+        Entreprise.EntrepriseBuilder builder = Entreprise.builder()
+                .nom(dto.nomEntreprise())
+                .pays(dto.pays())
+                .codePays(dto.pays().toUpperCase());
+
+        if (ref != null) {
+            builder.devise(ref.getDevise())
+                   .tauxTvaDefaut(ref.getTauxTva())
+                   .referentielComptable(ref.getSystemeComptable());
+        }
+
+        Entreprise entreprise = entrepriseRepo.save(builder.build());
 
         Utilisateur user = utilisateurRepo.save(
                 Utilisateur.builder()

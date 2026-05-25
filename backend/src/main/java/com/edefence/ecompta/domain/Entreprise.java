@@ -53,6 +53,14 @@ public class Entreprise {
     @Column(name = "logo_url", length = 500)
     private String logoUrl;
 
+    @Column(name = "code_pays", length = 2)
+    @Builder.Default
+    private String codePays = "BF";
+
+    @Column(name = "referentiel_comptable", length = 30)
+    @Builder.Default
+    private String referentielComptable = "SYSCOHADA";
+
     @Column(length = 10)
     @Builder.Default
     private String devise = "XOF";

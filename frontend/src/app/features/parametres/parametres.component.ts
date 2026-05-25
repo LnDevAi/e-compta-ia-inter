@@ -4,7 +4,9 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ParametresService } from '../../core/services/parametres.service';
+import { ReferentielPaysService } from '../../core/services/referentiel-pays.service';
 import { EntrepriseParametres } from '../../core/models/parametres.model';
+import { PaysDetail } from '../../core/models/referentiel-pays.model';
 
 const DEVISES = ['XOF', 'XAF', 'MAD', 'TND', 'EUR', 'USD', 'GNF', 'MGA'];
 const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin',
@@ -127,7 +129,8 @@ const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin',
         <div>
           <p class="text-xs text-gray-400">Système comptable</p>
           <p class="text-sm font-medium text-gray-700 mt-0.5">
-            SYSCOHADA — {{ params()!.systemeComptable === 'NORMAL' ? 'Système normal' : 'SMT' }}
+            {{ params()!.referentielComptable || 'SYSCOHADA' }}
+            — {{ params()!.systemeComptable === 'NORMAL' ? 'Système normal' : 'SMT' }}
           </p>
         </div>
         <div>
@@ -143,6 +146,46 @@ const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin',
         </div>
       </div>
     </div>
+
+    <!-- Référentiel fiscal pays -->
+    @if (paysDetail()) {
+      <div class="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-semibold text-gray-700">Référentiel fiscal — {{ paysDetail()!.nom }}</h2>
+          <span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-700">
+            {{ paysDetail()!.systemeComptable }}
+          </span>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div class="bg-gray-50 rounded-lg p-3">
+            <p class="text-xs text-gray-400">{{ paysDetail()!.nomTva || 'TVA' }}</p>
+            <p class="text-lg font-bold text-gray-900 mt-0.5">{{ paysDetail()!.tauxTva }}%</p>
+            <p class="text-xs text-gray-400">{{ paysDetail()!.periodeDeclarationTva }}</p>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-3">
+            <p class="text-xs text-gray-400">{{ paysDetail()!.nomIs || 'Impôt Sociétés' }}</p>
+            <p class="text-lg font-bold text-gray-900 mt-0.5">{{ paysDetail()!.tauxIs }}%</p>
+            <p class="text-xs text-gray-400">Taux normal</p>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-3">
+            <p class="text-xs text-gray-400">Devise officielle</p>
+            <p class="text-lg font-bold text-gray-900 mt-0.5">{{ paysDetail()!.devise }}</p>
+            <p class="text-xs text-gray-400 font-mono">{{ paysDetail()!.locale }}</p>
+          </div>
+          @if (paysDetail()!.minimumForfaitaire > 0) {
+            <div class="bg-orange-50 rounded-lg p-3 col-span-2 md:col-span-3">
+              <p class="text-xs text-orange-600">Minimum forfaitaire</p>
+              <p class="text-sm font-semibold text-orange-800 mt-0.5">
+                {{ paysDetail()!.minimumForfaitaire | number:'1.0-0' }} {{ paysDetail()!.devise }}
+              </p>
+            </div>
+          }
+        </div>
+        <p class="text-xs text-gray-400 italic">
+          Ces données sont issues du référentiel mondial et pré-configurées à l'inscription. Modifiez les taux ci-dessus si nécessaire.
+        </p>
+      </div>
+    }
 
     <!-- Actions -->
     @if (error()) {
@@ -175,12 +218,14 @@ const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin',
 })
 export class ParametresComponent implements OnInit {
 
-  private svc = inject(ParametresService);
+  private svc         = inject(ParametresService);
+  private referentiel = inject(ReferentielPaysService);
 
-  params  = signal<EntrepriseParametres | null>(null);
-  saving  = signal(false);
-  error   = signal<string | null>(null);
-  success = signal(false);
+  params     = signal<EntrepriseParametres | null>(null);
+  paysDetail = signal<PaysDetail | null>(null);
+  saving     = signal(false);
+  error      = signal<string | null>(null);
+  success    = signal(false);
 
   devises = DEVISES;
   mois    = MOIS;
@@ -189,7 +234,13 @@ export class ParametresComponent implements OnInit {
 
   ngOnInit() {
     this.svc.get().subscribe({
-      next: p => { this.params.set(p); this.resetForm(); },
+      next: p => {
+        this.params.set(p);
+        this.resetForm();
+        if (p.codePays) {
+          this.referentiel.getOne(p.codePays).subscribe(d => this.paysDetail.set(d));
+        }
+      },
     });
   }
 

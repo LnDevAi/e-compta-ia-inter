@@ -11,6 +11,8 @@ export interface EntrepriseParametres {
   devise: string;
   tauxTvaDefaut: number;
   debutExerciceMois: number;
-  systemeComptable: string;
-  plan: string;
+  systemeComptable:    string;
+  plan:                string;
+  codePays:            string | null;
+  referentielComptable: string | null;
 }
