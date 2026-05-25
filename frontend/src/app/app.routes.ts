@@ -108,6 +108,11 @@ export const routes: Routes = [
           import('./features/alertes/alertes.component').then(m => m.AlertesComponent)
       },
       {
+        path: 'export',
+        loadComponent: () =>
+          import('./features/export/export.component').then(m => m.ExportComponent)
+      },
+      {
         path: 'profile',
         loadComponent: () =>
           import('./features/profile/profile.component').then(m => m.ProfileComponent)
