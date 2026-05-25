@@ -19,7 +19,9 @@ public class ParametresDto {
             BigDecimal tauxTvaDefaut,
             int debutExerciceMois,
             String systemeComptable,
-            String plan
+            String plan,
+            String codePays,
+            String referentielComptable
     ) {}
 
     public record UpdateRequest(

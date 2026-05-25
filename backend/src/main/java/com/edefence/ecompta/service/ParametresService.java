@@ -56,6 +56,7 @@ public class ParametresService {
                 e.getAdresse(), e.getTelephone(), e.getEmail(),
                 e.getSiteWeb(), e.getLogoUrl(),
                 e.getDevise(), e.getTauxTvaDefaut(), e.getDebutExerciceMois(),
-                e.getSystemeComptable().name(), e.getPlan().name());
+                e.getSystemeComptable().name(), e.getPlan().name(),
+                e.getCodePays(), e.getReferentielComptable());
     }
 }

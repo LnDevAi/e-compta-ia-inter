@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, signal } from '@angular/core';
 import {
   AbstractControl, FormBuilder, ReactiveFormsModule,
   ValidationErrors, ValidatorFn, Validators
@@ -6,7 +6,8 @@ import {
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
-import { OHADA_PAYS } from '../../../core/models/auth.model';
+import { ReferentielPaysService } from '../../../core/services/referentiel-pays.service';
+import { PaysResume, PaysDetail } from '../../../core/models/referentiel-pays.model';
 
 const passwordMatch: ValidatorFn = (group: AbstractControl): ValidationErrors | null => {
   const pwd  = group.get('motDePasse')?.value;
@@ -54,19 +55,50 @@ const passwordMatch: ValidatorFn = (group: AbstractControl): ValidationErrors | 
               <label class="block text-sm font-medium text-gray-700 mb-1">
                 Pays <span class="text-red-500">*</span>
               </label>
-              <select formControlName="pays"
+              <select formControlName="pays" (change)="onPaysChange()"
                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm
                              focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                       [class.border-red-400]="isInvalid('pays')">
                 <option value="">-- Sélectionnez un pays --</option>
-                @for (p of pays; track p.code) {
-                  <option [value]="p.code">{{ p.label }}</option>
+                @for (p of pays(); track p.code) {
+                  <option [value]="p.code">{{ p.nom }} ({{ p.devise }})</option>
                 }
               </select>
               @if (isInvalid('pays')) {
                 <p class="text-xs text-red-500 mt-1">Veuillez sélectionner un pays</p>
               }
             </div>
+
+            <!-- Aperçu fiscal -->
+            @if (paysDetail()) {
+              <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 space-y-1.5">
+                <p class="text-xs font-semibold text-blue-700 uppercase tracking-wide">
+                  Paramètres fiscaux détectés
+                </p>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-blue-800">
+                  <div>
+                    <span class="text-blue-500">Référentiel :</span>
+                    <span class="font-semibold ml-1">{{ paysDetail()!.systemeComptable }}</span>
+                  </div>
+                  <div>
+                    <span class="text-blue-500">Devise :</span>
+                    <span class="font-semibold ml-1">{{ paysDetail()!.devise }}</span>
+                  </div>
+                  <div>
+                    <span class="text-blue-500">{{ paysDetail()!.nomTva || 'TVA' }} :</span>
+                    <span class="font-semibold ml-1">{{ paysDetail()!.tauxTva }}%</span>
+                  </div>
+                  <div>
+                    <span class="text-blue-500">{{ paysDetail()!.nomIs || 'IS' }} :</span>
+                    <span class="font-semibold ml-1">{{ paysDetail()!.tauxIs }}%</span>
+                  </div>
+                  <div>
+                    <span class="text-blue-500">Déclaration TVA :</span>
+                    <span class="font-semibold ml-1">{{ paysDetail()!.periodeDeclarationTva }}</span>
+                  </div>
+                </div>
+              </div>
+            }
           </div>
 
           <!-- User section -->
@@ -165,17 +197,18 @@ const passwordMatch: ValidatorFn = (group: AbstractControl): ValidationErrors | 
         </p>
 
         <p class="text-center text-xs text-gray-400 mt-4">
-          Le plan de comptes SYSCOHADA (32 comptes) est créé automatiquement.
+          Le plan de comptes et les paramètres fiscaux sont configurés automatiquement selon le pays.
         </p>
       </div>
     </div>
   `
 })
-export class RegisterComponent {
+export class RegisterComponent implements OnInit {
 
-  pays = OHADA_PAYS;
-  loading = signal(false);
-  error   = signal('');
+  pays       = signal<PaysResume[]>([]);
+  paysDetail = signal<PaysDetail | null>(null);
+  loading    = signal(false);
+  error      = signal('');
 
   form = this.fb.nonNullable.group({
     nomEntreprise:    ['', Validators.required],
@@ -187,17 +220,28 @@ export class RegisterComponent {
   }, { validators: passwordMatch });
 
   constructor(
-    private fb: FormBuilder,
-    private auth: AuthService,
-    private router: Router
+    private fb:          FormBuilder,
+    private authSvc:     AuthService,
+    private referentiel: ReferentielPaysService,
+    private router:      Router
   ) {}
+
+  ngOnInit() {
+    this.referentiel.listAll().subscribe(list => this.pays.set(list));
+  }
+
+  onPaysChange() {
+    const code = this.form.get('pays')?.value;
+    if (!code) { this.paysDetail.set(null); return; }
+    this.referentiel.getOne(code).subscribe(d => this.paysDetail.set(d));
+  }
 
   submit() {
     if (this.form.invalid) return;
     this.loading.set(true);
     this.error.set('');
     const { confirmMotDePasse, ...payload } = this.form.getRawValue();
-    this.auth.register(payload).subscribe({
+    this.authSvc.register(payload).subscribe({
       next: () => this.router.navigate(['/dashboard']),
       error: (e) => {
         this.error.set(e?.error?.detail ?? "Erreur lors de la création du compte");
@@ -219,8 +263,8 @@ export class RegisterComponent {
   private strength(): number {
     const pwd = this.form.get('motDePasse')?.value ?? '';
     let score = 0;
-    if (pwd.length >= 8)                        score++;
-    if (pwd.length >= 12)                       score++;
+    if (pwd.length >= 8)                         score++;
+    if (pwd.length >= 12)                        score++;
     if (/[A-Z]/.test(pwd) && /[0-9]/.test(pwd)) score++;
     if (/[^A-Za-z0-9]/.test(pwd))               score++;
     return score;
