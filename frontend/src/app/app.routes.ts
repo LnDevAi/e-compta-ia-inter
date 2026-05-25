@@ -196,6 +196,11 @@ export const routes: Routes = [
         path: 'kpi-executif',
         loadComponent: () =>
           import('./features/kpi-executif/kpi-executif.component').then(m => m.KpiExecutifComponent)
+      },
+      {
+        path: 'abonnements',
+        loadComponent: () =>
+          import('./features/abonnements/abonnements.component').then(m => m.AbonnementsComponent)
       }
     ]
   },
