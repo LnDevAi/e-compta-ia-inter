@@ -113,6 +113,16 @@ public class NotificationService {
                     "/dashboard/ecritures", Instant.now()));
         }
 
+        // Écritures en attente d'approbation
+        long enAttente = ecritureRepo.countEnAttenteByEntrepriseId(eid);
+        if (enAttente > 0) {
+            broadcast(eid, new NotificationDto(
+                    "APPROBATION",
+                    enAttente + " écriture(s) en attente d'approbation",
+                    (int) enAttente, "WARNING",
+                    "/dashboard/approbations", Instant.now()));
+        }
+
         // Alertes comptables
         AlerteDto.AlerteResponse alertes = alerteService.getAlertes(eid);
         if (alertes.countDanger() > 0) {
