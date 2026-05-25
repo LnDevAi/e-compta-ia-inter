@@ -95,6 +95,10 @@ import { AlerteService } from '../../../core/services/alerte.service';
              class="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">
             Balance âgée
           </a>
+          <a routerLink="/dashboard/paie" routerLinkActive="bg-blue-50 text-blue-700"
+             class="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">
+            Paie
+          </a>
           @if (user()?.role === 'ADMIN') {
             <a routerLink="/dashboard/parametres" routerLinkActive="bg-blue-50 text-blue-700"
                class="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">
