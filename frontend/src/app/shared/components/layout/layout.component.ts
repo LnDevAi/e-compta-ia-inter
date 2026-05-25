@@ -79,6 +79,10 @@ import { AlerteService } from '../../../core/services/alerte.service';
               </span>
             }
           </a>
+          <a routerLink="/dashboard/export" routerLinkActive="bg-blue-50 text-blue-700"
+             class="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">
+            Export
+          </a>
           @if (user()?.role === 'ADMIN') {
             <a routerLink="/dashboard/admin" routerLinkActive="bg-red-50 text-red-700"
                class="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">
