@@ -60,5 +60,5 @@ public class EcritureComptable {
     private OffsetDateTime createdAt;
 
     public enum Journal { AC, BQ, OD, VT }
-    public enum Statut  { BROUILLON, VALIDEE, CLOTUREE }
+    public enum Statut  { BROUILLON, EN_ATTENTE, VALIDEE, REJETEE, CLOTUREE }
 }
