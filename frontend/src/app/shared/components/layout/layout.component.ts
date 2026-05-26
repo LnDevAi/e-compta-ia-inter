@@ -222,6 +222,10 @@ import { SseNotificationService } from '../../../core/services/sse-notification.
              class="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">
             Mon espace
           </a>
+          <a routerLink="/dashboard/documents-rh" routerLinkActive="bg-rose-50 text-rose-700"
+             class="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">
+            Documents RH
+          </a>
           <a routerLink="/dashboard/ia" routerLinkActive="bg-purple-50 text-purple-700"
              class="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 flex items-center gap-1">
             <span class="text-xs">✦</span> Assistant IA

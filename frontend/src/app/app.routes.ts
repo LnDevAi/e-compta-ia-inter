@@ -281,6 +281,11 @@ export const routes: Routes = [
         path: 'mon-espace',
         loadComponent: () =>
           import('./features/portail-collaborateur/portail-collaborateur.component').then(m => m.PortailCollaborateurComponent)
+      },
+      {
+        path: 'documents-rh',
+        loadComponent: () =>
+          import('./features/documents-rh/documents-rh.component').then(m => m.DocumentsRhComponent)
       }
     ]
   },
