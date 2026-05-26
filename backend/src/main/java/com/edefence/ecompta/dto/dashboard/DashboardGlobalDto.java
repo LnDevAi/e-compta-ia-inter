@@ -39,6 +39,19 @@ public final class DashboardGlobalDto {
             BigDecimal charges
     ) {}
 
+    /** Monthly cash balance (classe 5) */
+    public record TresorerieMois(
+            int        mois,
+            BigDecimal solde
+    ) {}
+
+    /** Charges breakdown by account root (61x, 62x, … 68x) */
+    public record RepartitionCharges(
+            String     classeCompte,
+            String     libelle,
+            BigDecimal montant
+    ) {}
+
     public record Alerte(
             String type,
             String message,
@@ -46,12 +59,16 @@ public final class DashboardGlobalDto {
     ) {}
 
     public record Response(
-            int              exercice,
-            KpiFinancier     financier,
-            ExecBudget       budgetComptable,
-            ExecBudget       budgetRh,
-            List<TopAxe>     topAxes,
-            List<MoisTendance> tendance,
-            List<Alerte>     alertes
+            int                      exercice,
+            KpiFinancier             financier,
+            KpiFinancier             financierN1,
+            ExecBudget               budgetComptable,
+            ExecBudget               budgetRh,
+            List<TopAxe>             topAxes,
+            List<MoisTendance>       tendance,
+            List<MoisTendance>       tendanceN1,
+            List<TresorerieMois>     tresorerieEvol,
+            List<RepartitionCharges> repartitionCharges,
+            List<Alerte>             alertes
     ) {}
 }

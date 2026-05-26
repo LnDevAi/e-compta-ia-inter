@@ -30,6 +30,17 @@ export interface MoisTendance {
   charges: number;
 }
 
+export interface TresorerieMois {
+  mois: number;
+  solde: number;
+}
+
+export interface RepartitionCharges {
+  classeCompte: string;
+  libelle: string;
+  montant: number;
+}
+
 export interface Alerte {
   type: string;
   message: string;
@@ -39,10 +50,14 @@ export interface Alerte {
 export interface DashboardGlobal {
   exercice: number;
   financier: KpiFinancier;
+  financierN1: KpiFinancier;
   budgetComptable: ExecBudget;
   budgetRh: ExecBudget;
   topAxes: TopAxe[];
   tendance: MoisTendance[];
+  tendanceN1: MoisTendance[];
+  tresorerieEvol: TresorerieMois[];
+  repartitionCharges: RepartitionCharges[];
   alertes: Alerte[];
 }
 
