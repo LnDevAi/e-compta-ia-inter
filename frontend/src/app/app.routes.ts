@@ -226,6 +226,11 @@ export const routes: Routes = [
         path: 'conges',
         loadComponent: () =>
           import('./features/conges/conges.component').then(m => m.CongesComponent)
+      },
+      {
+        path: 'evaluations',
+        loadComponent: () =>
+          import('./features/evaluations/evaluations.component').then(m => m.EvaluationsComponent)
       }
     ]
   },
