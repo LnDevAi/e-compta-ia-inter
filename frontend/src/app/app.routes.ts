@@ -18,6 +18,11 @@ export const routes: Routes = [
         canActivate: [guestGuard],
         loadComponent: () =>
           import('./features/auth/register/register.component').then(m => m.RegisterComponent)
+      },
+      {
+        path: 'accept-invite',
+        loadComponent: () =>
+          import('./features/auth/accept-invite/accept-invite.component').then(m => m.AcceptInviteComponent)
       }
     ]
   },
@@ -126,6 +131,11 @@ export const routes: Routes = [
         path: 'profile',
         loadComponent: () =>
           import('./features/profile/profile.component').then(m => m.ProfileComponent)
+      },
+      {
+        path: 'utilisateurs',
+        loadComponent: () =>
+          import('./features/utilisateurs-admin/utilisateurs-admin.component').then(m => m.UtilisateursAdminComponent)
       },
       {
         path: 'affectation',
