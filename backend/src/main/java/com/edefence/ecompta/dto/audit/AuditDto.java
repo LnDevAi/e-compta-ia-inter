@@ -1,6 +1,7 @@
 package com.edefence.ecompta.dto.audit;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public class AuditDto {
@@ -13,5 +14,16 @@ public class AuditDto {
             String entityRef,
             String details,
             OffsetDateTime createdAt
+    ) {}
+
+    public record ActionStat(String action, long count) {}
+    public record UserStat(String userEmail, long count) {}
+
+    public record Stats(
+            long totalEvents,
+            long eventsLast7Days,
+            long eventsLast30Days,
+            List<ActionStat> topActions,
+            List<UserStat>   topUsers
     ) {}
 }

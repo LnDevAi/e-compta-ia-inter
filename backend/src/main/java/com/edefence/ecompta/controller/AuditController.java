@@ -21,12 +21,18 @@ public class AuditController {
     @GetMapping
     public Page<AuditDto.Response> lister(
             @RequestParam(required = false) String action,
+            @RequestParam(required = false) String entityType,
             @RequestParam(required = false) String userEmail,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
-        return svc.lister(TenantContext.get(), action, userEmail, from, to,
+        return svc.lister(TenantContext.get(), action, entityType, userEmail, from, to,
                 PageRequest.of(page, Math.min(size, 200)));
+    }
+
+    @GetMapping("/stats")
+    public AuditDto.Stats stats() {
+        return svc.stats(TenantContext.get());
     }
 }

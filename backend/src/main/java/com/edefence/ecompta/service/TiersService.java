@@ -21,6 +21,7 @@ public class TiersService {
 
     private final TiersRepository tiersRepo;
     private final EntrepriseRepository entrepriseRepo;
+    private final AuditService auditSvc;
 
     // ─── Queries ─────────────────────────────────────────────────────────────
 
@@ -64,7 +65,9 @@ public class TiersService {
                 .compteNumero(dto.compteNumero())
                 .build();
 
-        return toResponse(tiersRepo.save(tiers));
+        TiersDto.Response result = toResponse(tiersRepo.save(tiers));
+        auditSvc.logCurrent(entrepriseId, "TIERS_CREE", "TIERS", tiers.getCode() + " — " + tiers.getNom());
+        return result;
     }
 
     @Transactional
@@ -86,20 +89,28 @@ public class TiersService {
         tiers.setAdresse(dto.adresse());
         tiers.setCompteNumero(dto.compteNumero());
 
-        return toResponse(tiersRepo.save(tiers));
+        TiersDto.Response result = toResponse(tiersRepo.save(tiers));
+        auditSvc.logCurrent(entrepriseId, "TIERS_MODIFIE", "TIERS", tiers.getCode() + " — " + tiers.getNom());
+        return result;
     }
 
     @Transactional
     public TiersDto.Response toggleActif(UUID id, UUID entrepriseId) {
         Tiers tiers = findOrThrow(id, entrepriseId);
         tiers.setActif(!tiers.isActif());
-        return toResponse(tiersRepo.save(tiers));
+        TiersDto.Response result = toResponse(tiersRepo.save(tiers));
+        auditSvc.logCurrent(entrepriseId,
+                tiers.isActif() ? "TIERS_ACTIVE" : "TIERS_DESACTIVE",
+                "TIERS", tiers.getCode() + " — " + tiers.getNom());
+        return result;
     }
 
     @Transactional
     public void delete(UUID id, UUID entrepriseId) {
         Tiers tiers = findOrThrow(id, entrepriseId);
+        String ref = tiers.getCode() + " — " + tiers.getNom();
         tiersRepo.delete(tiers);
+        auditSvc.logCurrent(entrepriseId, "TIERS_SUPPRIME", "TIERS", ref);
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
