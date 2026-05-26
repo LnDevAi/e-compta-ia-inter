@@ -30,6 +30,7 @@ public class BudgetService {
     private final EntrepriseRepository    entrepriseRepo;
     private final CompteComptableRepository compteRepo;
     private final LigneEcritureRepository ligneRepo;
+    private final AuditService            auditSvc;
 
     // ─── Comparatif ──────────────────────────────────────────────────────────
 
@@ -111,8 +112,12 @@ public class BudgetService {
                         .sens(dto.sens())
                         .build());
 
+        boolean isNew = budget.getId() == null;
         budget.setMontant(dto.montant());
         budgetRepo.save(budget);
+        auditSvc.logCurrent(entrepriseId,
+                isNew ? "BUDGET_CREE" : "BUDGET_MODIFIE",
+                "BUDGET", exercice + "/" + dto.compteNumero());
 
         String intitule = compteRepo.findByNumeroAndEntrepriseId(dto.compteNumero(), entrepriseId)
                 .map(c -> c.getIntitule()).orElse(dto.compteNumero());
@@ -139,6 +144,8 @@ public class BudgetService {
     public void delete(UUID id, UUID entrepriseId) {
         Budget b = budgetRepo.findByIdAndEntrepriseId(id, entrepriseId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ligne budget introuvable"));
+        String ref = b.getExercice() + "/" + b.getCompteNumero();
         budgetRepo.delete(b);
+        auditSvc.logCurrent(entrepriseId, "BUDGET_SUPPRIME", "BUDGET", ref);
     }
 }

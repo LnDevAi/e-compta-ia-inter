@@ -26,6 +26,7 @@ public class FactureService {
     private final TiersRepository           tiersRepo;
     private final EcritureComptableRepository ecritureRepo;
     private final CompteComptableRepository compteRepo;
+    private final AuditService              auditSvc;
 
     // ─── Queries ────────────────────────────────────────────────────────────
 
@@ -66,7 +67,9 @@ public class FactureService {
 
         buildLignes(facture, req.lignes(), exonere);
         recalcTotaux(facture);
-        return toResponse(factureRepo.save(facture), LocalDate.now());
+        Facture saved = factureRepo.save(facture);
+        auditSvc.logCurrent(entreprise.getId(), "FACTURE_CREEE", "FACTURE", saved.getNumero());
+        return toResponse(saved, LocalDate.now());
     }
 
     @Transactional
@@ -89,7 +92,9 @@ public class FactureService {
         facture.getLignes().clear();
         buildLignes(facture, req.lignes(), exonere);
         recalcTotaux(facture);
-        return toResponse(factureRepo.save(facture), LocalDate.now());
+        FactureDto.Response result = toResponse(factureRepo.save(facture), LocalDate.now());
+        auditSvc.logCurrent(entreprise.getId(), "FACTURE_MODIFIEE", "FACTURE", facture.getNumero());
+        return result;
     }
 
     @Transactional
@@ -99,7 +104,9 @@ public class FactureService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Seule une facture en brouillon peut être supprimée");
         }
+        String ref = facture.getNumero();
         factureRepo.delete(facture);
+        auditSvc.logCurrent(eid, "FACTURE_SUPPRIMEE", "FACTURE", ref);
     }
 
     // ─── Actions ────────────────────────────────────────────────────────────
@@ -163,9 +170,10 @@ public class FactureService {
         EcritureComptable saved = ecritureRepo.save(ecriture);
         facture.setStatut(Facture.Statut.EMISE);
         facture.setEcritureVente(saved);
-        // Passage automatique en EN_ATTENTE de normalisation DGI
         facture.setStatutNormalisation(Facture.StatutNormalisation.EN_ATTENTE);
-        return toResponse(factureRepo.save(facture), LocalDate.now());
+        FactureDto.Response result = toResponse(factureRepo.save(facture), LocalDate.now());
+        auditSvc.log(eid, auteur.getEmail(), "FACTURE_EMISE", "FACTURE", facture.getNumero(), null);
+        return result;
     }
 
     @Transactional
