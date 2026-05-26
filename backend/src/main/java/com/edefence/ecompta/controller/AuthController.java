@@ -1,10 +1,12 @@
 package com.edefence.ecompta.controller;
 
+import com.edefence.ecompta.dto.admin.InvitationDto;
 import com.edefence.ecompta.dto.auth.AuthResponseDto;
 import com.edefence.ecompta.dto.auth.LoginDto;
 import com.edefence.ecompta.dto.auth.ProfileDto;
 import com.edefence.ecompta.dto.auth.RegisterDto;
 import com.edefence.ecompta.dto.auth.UpdateProfileDto;
+import com.edefence.ecompta.service.AdminUtilisateurService;
 import com.edefence.ecompta.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,6 +27,7 @@ import java.time.Duration;
 public class AuthController {
 
     private final AuthService authService;
+    private final AdminUtilisateurService adminUtilisateurService;
     private final StringRedisTemplate redisTemplate;
 
     @Operation(summary = "Créer un compte entreprise", description = "Crée une nouvelle entreprise et un utilisateur ADMIN. Retourne un JWT valide immédiatement.")
@@ -59,5 +62,12 @@ public class AuthController {
     public ProfileDto updateMe(@AuthenticationPrincipal UserDetails user,
                                @Valid @RequestBody UpdateProfileDto dto) {
         return authService.updateMe(user.getUsername(), dto);
+    }
+
+    @Operation(summary = "Accepter une invitation", description = "Définit le mot de passe et active le compte après clic sur le lien d'invitation.")
+    @PostMapping("/accept-invite")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void acceptInvite(@RequestBody InvitationDto.AcceptInviteRequest req) {
+        adminUtilisateurService.accepterInvitation(req);
     }
 }
