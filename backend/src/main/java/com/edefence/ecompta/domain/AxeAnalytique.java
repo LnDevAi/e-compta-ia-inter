@@ -34,6 +34,10 @@ public class AxeAnalytique {
     @Column(name = "montant_budget", precision = 15, scale = 2)
     private java.math.BigDecimal montantBudget;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    private AxeAnalytique parent;
+
     @Column(nullable = false)
     @Builder.Default
     private boolean actif = true;

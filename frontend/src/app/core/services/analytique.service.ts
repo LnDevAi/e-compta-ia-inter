@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { AxeAnalytique, RapportAnalytique, TypeAxe } from '../models/analytique.model';
+import { AxeAnalytique, RapportAnalytique, RapportBailleurResponse, TypeAxe } from '../models/analytique.model';
 
 @Injectable({ providedIn: 'root' })
 export class AnalytiqueService {
@@ -11,12 +11,12 @@ export class AnalytiqueService {
     return this.http.get<AxeAnalytique[]>('/api/analytique/axes', { params });
   }
 
-  creerAxe(code: string, intitule: string, type: TypeAxe, montantBudget: number | null) {
-    return this.http.post<AxeAnalytique>('/api/analytique/axes', { code, intitule, type, montantBudget });
+  creerAxe(code: string, intitule: string, type: TypeAxe, montantBudget: number | null, parentId: string | null) {
+    return this.http.post<AxeAnalytique>('/api/analytique/axes', { code, intitule, type, montantBudget, parentId });
   }
 
-  modifierAxe(id: string, code: string, intitule: string, type: TypeAxe, montantBudget: number | null) {
-    return this.http.put<AxeAnalytique>(`/api/analytique/axes/${id}`, { code, intitule, type, montantBudget });
+  modifierAxe(id: string, code: string, intitule: string, type: TypeAxe, montantBudget: number | null, parentId: string | null) {
+    return this.http.put<AxeAnalytique>(`/api/analytique/axes/${id}`, { code, intitule, type, montantBudget, parentId });
   }
 
   toggleActif(id: string) {
@@ -33,6 +33,11 @@ export class AnalytiqueService {
 
   rapport(debut: string, fin: string) {
     return this.http.get<RapportAnalytique>('/api/analytique/rapport',
+      { params: new HttpParams().set('debut', debut).set('fin', fin) });
+  }
+
+  rapportBailleur(debut: string, fin: string) {
+    return this.http.get<RapportBailleurResponse>('/api/analytique/rapport-bailleur',
       { params: new HttpParams().set('debut', debut).set('fin', fin) });
   }
 }
