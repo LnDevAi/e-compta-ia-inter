@@ -14,6 +14,7 @@ import com.edefence.ecompta.repository.UtilisateurRepository;
 import com.edefence.ecompta.security.JwtService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,6 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.UUID;
 
 @Service
@@ -34,6 +36,9 @@ public class AuthService {
     private final PasswordEncoder encoder;
     private final JwtService jwtService;
     private final AuthenticationManager authManager;
+    private final StringRedisTemplate redisTemplate;
+
+    public static final String TOTP_PENDING_PREFIX = "2fa_pending:";
 
     @Transactional
     public AuthResponseDto register(RegisterDto dto) {
@@ -80,6 +85,15 @@ public class AuthService {
         Utilisateur user = utilisateurRepo.findByEmail(dto.email())
                 .orElseThrow(() -> new EntityNotFoundException("Utilisateur introuvable"));
 
+        if (user.isTotpEnabled()) {
+            String tempToken = UUID.randomUUID().toString();
+            redisTemplate.opsForValue().set(
+                    TOTP_PENDING_PREFIX + tempToken, user.getEmail(), Duration.ofMinutes(5));
+            return new AuthResponseDto(null, user.getEmail(), user.getNom(),
+                    user.getRole().name(), user.getEntreprise().getId(),
+                    user.getEntreprise().getNom(), true, tempToken);
+        }
+
         String token = jwtService.generate(user.getEmail(), user.getEntreprise().getId(), user.getRole().name());
         return toResponse(token, user, user.getEntreprise());
     }
@@ -90,7 +104,8 @@ public class AuthService {
                 .orElseThrow(() -> new EntityNotFoundException("Utilisateur introuvable"));
         Entreprise e = user.getEntreprise();
         return new ProfileDto(user.getId(), user.getNom(), user.getEmail(),
-                user.getRole().name(), e.getId(), e.getNom(), e.getPays(), e.getPlan(), user.getCreatedAt());
+                user.getRole().name(), e.getId(), e.getNom(), e.getPays(), e.getPlan(),
+                user.getCreatedAt(), user.isTotpEnabled());
     }
 
     @Transactional
@@ -117,7 +132,8 @@ public class AuthService {
         utilisateurRepo.save(user);
         Entreprise e = user.getEntreprise();
         return new ProfileDto(user.getId(), user.getNom(), user.getEmail(),
-                user.getRole().name(), e.getId(), e.getNom(), e.getPays(), e.getPlan(), user.getCreatedAt());
+                user.getRole().name(), e.getId(), e.getNom(), e.getPays(), e.getPlan(),
+                user.getCreatedAt(), user.isTotpEnabled());
     }
 
     private AuthResponseDto toResponse(String token, Utilisateur user, Entreprise entreprise) {
@@ -127,7 +143,9 @@ public class AuthService {
                 user.getNom(),
                 user.getRole().name(),
                 entreprise.getId(),
-                entreprise.getNom()
+                entreprise.getNom(),
+                null,
+                null
         );
     }
 }
