@@ -12,14 +12,16 @@ public class AnalytiqueDto {
             String     intitule,
             boolean    actif,
             String     type,
-            BigDecimal montantBudget
+            BigDecimal montantBudget,
+            UUID       parentId
     ) {}
 
     public record AxeRequest(
             String     code,
             String     intitule,
             String     type,
-            BigDecimal montantBudget
+            BigDecimal montantBudget,
+            UUID       parentId
     ) {}
 
     public record LigneRapport(
@@ -47,6 +49,47 @@ public class AnalytiqueDto {
             String periodeDebut,
             String periodeFin,
             List<RapportAxe> axes
+    ) {}
+
+    // ─── Rapport bailleur hiérarchique ───────────────────────────────────────
+
+    public record LigneBailleur(
+            String     compteNumero,
+            String     compteIntitule,
+            BigDecimal debit,
+            BigDecimal credit,
+            BigDecimal solde
+    ) {}
+
+    public record SousAxe(
+            UUID       axeId,
+            String     axeCode,
+            String     axeIntitule,
+            String     axeType,
+            BigDecimal montantBudget,
+            List<LigneBailleur> lignes,
+            BigDecimal totalDebit,
+            BigDecimal totalCredit,
+            BigDecimal solde,
+            Double     tauxExecution
+    ) {}
+
+    public record RapportBailleur(
+            UUID       bailleurId,
+            String     bailleurCode,
+            String     bailleurIntitule,
+            BigDecimal montantBudget,
+            List<SousAxe> sousAxes,
+            BigDecimal totalDebit,
+            BigDecimal totalCredit,
+            BigDecimal solde,
+            Double     tauxExecution
+    ) {}
+
+    public record RapportBailleurResponse(
+            String periodeDebut,
+            String periodeFin,
+            List<RapportBailleur> bailleurs
     ) {}
 
     public record VentilerRequest(
