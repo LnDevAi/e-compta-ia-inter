@@ -1,10 +1,12 @@
 export interface AuthResponse {
-  token: string;
+  token: string | null;
   email: string;
   nom: string;
   role: 'ADMIN' | 'COMPTABLE' | 'LECTEUR';
   entrepriseId: string;
   nomEntreprise: string;
+  requiresTwoFactor?: boolean;
+  tempToken?: string;
 }
 
 export interface LoginPayload {
@@ -37,6 +39,13 @@ export interface ProfileResponse {
   pays: string;
   plan: 'FREE' | 'PRO' | 'ENTERPRISE';
   createdAt: string;
+  totpEnabled: boolean;
+}
+
+export interface TotpSetupResponse {
+  qrCodeImage: string;
+  secret: string;
+  uri: string;
 }
 
 export interface UpdateProfilePayload {
