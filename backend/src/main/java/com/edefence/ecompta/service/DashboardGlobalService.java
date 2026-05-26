@@ -31,18 +31,25 @@ public class DashboardGlobalService {
 
     @Transactional(readOnly = true)
     public DashboardGlobalDto.Response get(UUID eid, int exercice) {
-        LocalDate debut = LocalDate.of(exercice, 1, 1);
-        LocalDate fin   = LocalDate.of(exercice, 12, 31);
+        LocalDate debut   = LocalDate.of(exercice,     1, 1);
+        LocalDate fin     = LocalDate.of(exercice,    12, 31);
+        LocalDate debutN1 = LocalDate.of(exercice - 1, 1, 1);
+        LocalDate finN1   = LocalDate.of(exercice - 1,12, 31);
 
-        List<Object[]> balance = ligneRepo.balanceParCompte(eid, debut, fin);
+        List<Object[]> balance   = ligneRepo.balanceParCompte(eid, debut, fin);
+        List<Object[]> balanceN1 = ligneRepo.balanceParCompte(eid, debutN1, finN1);
 
         return new DashboardGlobalDto.Response(
                 exercice,
                 computeFinancier(eid, balance),
+                computeFinancier(eid, balanceN1),
                 computeBudgetComptable(eid, exercice, balance),
                 computeBudgetRh(eid, exercice),
                 computeTopAxes(eid, debut, fin),
                 computeTendance(eid, debut, fin),
+                computeTendance(eid, debutN1, finN1),
+                computeTresorerieEvol(eid, debut, fin),
+                computeRepartitionCharges(balance),
                 computeAlertes(eid, exercice, balance)
         );
     }
@@ -251,6 +258,62 @@ public class DashboardGlobalService {
         }
 
         return alertes;
+    }
+
+    // ─── Trésorerie mensuelle ─────────────────────────────────────────────────
+
+    private List<DashboardGlobalDto.TresorerieMois> computeTresorerieEvol(
+            UUID eid, LocalDate debut, LocalDate fin) {
+        List<Object[]> rows = ligneRepo.tendanceMensuelle(eid, debut, fin);
+        Map<Integer, BigDecimal> map = new TreeMap<>();
+        for (Object[] r : rows) {
+            int mois = ((Number) r[0]).intValue();
+            // Columns depend on tendanceMensuelle — we need trésorerie (classe 5)
+            // tendanceMensuelle returns: mois, prodCredit, prodDebit, chgDebit, chgCredit
+            // We need a separate query for trésorerie — use balance restricted to mois
+            map.put(mois, ZERO);
+        }
+        // Compute cumulative tresorerie from balance per month using in-memory approach
+        List<Object[]> balRows = ligneRepo.tendanceMensuelleClasse(eid, "5", debut, fin);
+        for (Object[] r : balRows) {
+            int mois = ((Number) r[0]).intValue();
+            BigDecimal debit  = (BigDecimal) r[1];
+            BigDecimal credit = (BigDecimal) r[2];
+            map.put(mois, debit.subtract(credit));
+        }
+        if (map.isEmpty()) return List.of();
+        return map.entrySet().stream()
+                .map(e -> new DashboardGlobalDto.TresorerieMois(e.getKey(), e.getValue()))
+                .toList();
+    }
+
+    // ─── Répartition des charges ──────────────────────────────────────────────
+
+    private List<DashboardGlobalDto.RepartitionCharges> computeRepartitionCharges(
+            List<Object[]> balance) {
+        Map<String, BigDecimal> map = new TreeMap<>();
+        for (Object[] r : balance) {
+            String     num = (String) r[0];
+            BigDecimal d   = (BigDecimal) r[3];
+            BigDecimal c   = (BigDecimal) r[4];
+            if (num.startsWith("6") && num.length() >= 2) {
+                String root = num.substring(0, 2);
+                map.merge(root, d.subtract(c).max(ZERO), BigDecimal::add);
+            }
+        }
+        Map<String, String> labels = Map.of(
+            "60", "Achats", "61", "Services extérieurs I",
+            "62", "Services extérieurs II", "63", "Impôts & taxes",
+            "64", "Charges de personnel", "65", "Autres charges",
+            "66", "Charges financières", "67", "Charges hors exploitation",
+            "68", "Dotations aux amortissements"
+        );
+        return map.entrySet().stream()
+                .filter(e -> e.getValue().compareTo(ZERO) > 0)
+                .map(e -> new DashboardGlobalDto.RepartitionCharges(
+                        e.getKey(), labels.getOrDefault(e.getKey(), "Charges " + e.getKey()),
+                        e.getValue()))
+                .toList();
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
