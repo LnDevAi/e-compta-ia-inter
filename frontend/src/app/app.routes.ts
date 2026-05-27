@@ -77,6 +77,21 @@ export const routes: Routes = [
     ]
   },
   {
+    path: 'tech',
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./features/tech-docs/tech-docs.component').then(m => m.TechDocsComponent)
+      },
+      {
+        path: ':id',
+        loadComponent: () =>
+          import('./features/tech-docs/tech-docs.component').then(m => m.TechDocsComponent)
+      }
+    ]
+  },
+  {
     path: 'auth',
     children: [
       {
