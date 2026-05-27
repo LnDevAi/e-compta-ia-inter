@@ -133,7 +133,7 @@ type Tab = 'synthese' | 'conges' | 'presences' | 'notes' | 'prets';
             </tr>
           </thead>
           <tbody>
-            @for (l of rapportConges.lignes; track $index) {
+            @for (l of rapportConges.lignes; track l) {
               <tr class="border-t border-gray-100 hover:bg-gray-50">
                 <td class="px-4 py-2.5 text-gray-700">{{ l.collaborateur }}</td>
                 <td class="px-4 py-2.5 text-gray-500">{{ l.type }}</td>
@@ -187,7 +187,7 @@ type Tab = 'synthese' | 'conges' | 'presences' | 'notes' | 'prets';
               </tr>
             </thead>
             <tbody>
-              @for (l of rapportPresences.lignes; track $index) {
+              @for (l of rapportPresences.lignes; track l) {
                 <tr class="border-t border-gray-100 hover:bg-gray-50">
                   <td class="px-4 py-2.5 text-gray-700">{{ l.collaborateur }}</td>
                   <td class="px-4 py-2.5 text-right text-gray-700">{{ l.nbJoursTravailles }}</td>
@@ -237,7 +237,7 @@ type Tab = 'synthese' | 'conges' | 'presences' | 'notes' | 'prets';
             </tr>
           </thead>
           <tbody>
-            @for (l of rapportNotes.lignes; track $index) {
+            @for (l of rapportNotes.lignes; track l) {
               <tr class="border-t border-gray-100 hover:bg-gray-50">
                 <td class="px-4 py-2.5 text-gray-700">{{ l.collaborateur }}</td>
                 <td class="px-4 py-2.5 text-gray-500 text-xs">{{ l.categorie }}</td>
@@ -276,7 +276,7 @@ type Tab = 'synthese' | 'conges' | 'presences' | 'notes' | 'prets';
             </tr>
           </thead>
           <tbody>
-            @for (l of rapportPrets.lignes; track $index) {
+            @for (l of rapportPrets.lignes; track l) {
               <tr class="border-t border-gray-100 hover:bg-gray-50">
                 <td class="px-4 py-2.5 text-gray-700">{{ l.collaborateur }}</td>
                 <td class="px-4 py-2.5 text-gray-500 text-xs">{{ l.type }}</td>
