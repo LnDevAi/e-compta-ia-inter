@@ -446,6 +446,7 @@ import { ToastComponent } from '../toast/toast.component';
           <span>© {{ currentYear }} L'N EXPERTISE</span>
           <a routerLink="/produit" class="hover:text-emerald-600 transition-colors">À propos</a>
           <a routerLink="/aide" class="hover:text-emerald-600 transition-colors">Centre d'aide</a>
+          <a routerLink="/tech" class="hover:text-emerald-600 transition-colors">Documentation technique</a>
           <a routerLink="/legal/mentions-legales" class="hover:text-emerald-600 transition-colors">Mentions légales</a>
           <a routerLink="/legal/cgu" class="hover:text-emerald-600 transition-colors">CGU</a>
           <a routerLink="/legal/cgv" class="hover:text-emerald-600 transition-colors">CGV</a>
