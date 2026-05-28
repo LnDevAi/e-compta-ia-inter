@@ -1,4 +1,4 @@
-﻿# Changelog — E-Compta IA Inter
+﻿# Changelog — ComptaBIA Inter
 
 Toutes les modifications notables de ce projet sont documentees ici.
 Format base sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
@@ -26,5 +26,5 @@ Ce projet suit le [Versionnage Semantique](https://semver.org/lang/fr/).
 - Branches : main, dev, eature/frontend-neya, eature/security-zombre
 - Collaborateurs : MoussaNEYA, Yamalr
 
-[Non publie]: https://github.com/LnDevAi/e-compta-ia-inter/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/LnDevAi/e-compta-ia-inter/releases/tag/v0.1.0
+[Non publie]: https://github.com/LnDevAi/comptabia/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/LnDevAi/comptabia/releases/tag/v0.1.0

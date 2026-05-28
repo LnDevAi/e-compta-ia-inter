@@ -1,4 +1,4 @@
-# E-Compta IA International — Plateforme SaaS de Comptabilité Assistée par IA
+# ComptaBIA International — Plateforme SaaS de Comptabilité Assistée par IA
 
 Plateforme SaaS internationale de comptabilité conforme **SYSCOHADA AUDCIF** (espace OHADA), avec assistant IA pour la saisie automatique des pièces justificatives et la génération des états financiers.
 
@@ -36,8 +36,8 @@ Plateforme SaaS internationale de comptabilité conforme **SYSCOHADA AUDCIF** (e
 ## Démarrage rapide
 
 ```bash
-git clone https://github.com/LnDevAi/e-compta-ia-inter.git
-cd e-compta-ia-inter
+git clone https://github.com/LnDevAi/comptabia.git
+cd comptabia
 # Backend Spring Boot
 cd backend && mvn spring-boot:run
 # Frontend Angular
