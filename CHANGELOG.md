@@ -1,4 +1,4 @@
-﻿# Changelog — E-Compta IA Inter
+﻿# Changelog — ComptaBIA
 
 Toutes les modifications notables de ce projet sont documentees ici.
 Format base sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
